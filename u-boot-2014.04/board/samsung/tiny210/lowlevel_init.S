@@ -26,7 +26,7 @@ lowlevel_init:
     bl ddr_init			
 		     
 	/*add by Nick*/ 
-    ldr r0, =0xE0200000
+    ldr r0, =0xE0200000		/* config GPIO as UART */
 	ldr r1, =0x22222222
 	str r1, [r0]		
 #endif
