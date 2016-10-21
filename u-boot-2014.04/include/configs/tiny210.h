@@ -46,6 +46,7 @@
 #define CONFIG_CMDLINE_TAG
 #define CONFIG_INITRD_TAG
 #define CONFIG_CMDLINE_EDITING
+#define CONFIG_AUTO_COMPLETE	//add by Nick
 
 /*
  * Size of malloc() pool
