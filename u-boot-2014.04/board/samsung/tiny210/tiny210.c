@@ -18,6 +18,8 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+//modify by Nick
+#if 0
 /*
  * Miscellaneous platform dependent initialisations
  */
@@ -40,10 +42,30 @@ static void smc9115_pre_init(void)
 	/* Select and configure the SROMC bank */
 	s5p_config_sromc(CONFIG_ENV_SROM_BANK, smc_bw_conf, smc_bc_conf);
 }
+#endif
+
+//add by Nick
+static void dm9000_pre_init(void)
+{
+	u32 smc_bw_conf, smc_bc_conf;
+
+	/* Ethernet needs bus width of 16 bits */
+	smc_bw_conf = SMC_DATA16_WIDTH(CONFIG_ENV_SROM_BANK)
+					| SMC_BYTE_ADDR_MODE(CONFIG_ENV_SROM_BANK);
+	smc_bc_conf = SMC_BC_TACS(0x0) | SMC_BC_TCOS(1) | SMC_BC_TACC(2)
+			| SMC_BC_TCOH(1) | SMC_BC_TAH(0)
+			| SMC_BC_TACP(0) | SMC_BC_PMC(0);
+
+	/* Select and configure the SROMC bank */
+	s5p_config_sromc(CONFIG_ENV_SROM_BANK, smc_bw_conf, smc_bc_conf);
+}
+
 
 int board_init(void)
 {
-	smc9115_pre_init();
+	//modify by Nick
+//	smc9115_pre_init();
+	dm9000_pre_init();
 
 	gd->bd->bi_arch_number = MACH_TYPE_SMDKC100;
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
@@ -77,6 +99,9 @@ int board_eth_init(bd_t *bis)
 	int rc = 0;
 #ifdef CONFIG_SMC911X
 	rc = smc911x_initialize(0, CONFIG_SMC911X_BASE);
+//add by Nick
+#elif CONFIG_DRIVER_DM9000
+	rc = dm9000_initialize(bis);
 #endif
 	return rc;
 }
