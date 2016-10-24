@@ -196,7 +196,7 @@ VAR_SIZE_PARAM = --vs
 else
 VAR_SIZE_PARAM =
 endif
-#modied by shl
+#modied by Nick
 $(obj)/$(BOARD)-spl.bin: $(obj)/u-boot-spl.bin
 	$(objtree)/tools/mk$(BOARD)spl  $< $@
 endif

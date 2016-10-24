@@ -93,6 +93,9 @@
 #define CONFIG_NAND_S5PV210				1
 #define CONFIG_MTD_DEVICE
 #define CONFIG_MTD_PARTITIONS
+#define CONFIG_S5PV210_NAND_HWECC		1
+#define CONFIG_SYS_NAND_ECCSIZE			512
+#define CONFIG_SYS_NAND_ECCBYTES		13
 
 /*modify by Nick*/
 #define MTDIDS_DEFAULT		"nand0=s5p-nand"

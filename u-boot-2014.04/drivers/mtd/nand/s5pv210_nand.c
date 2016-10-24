@@ -48,7 +48,7 @@ static void s5pv210_hwcontrol(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 
 static int s5pv210_dev_ready(struct mtd_info *mtd)
 {
-	struct s5pv210_nand *nand = samsung_get_base_nand();
+	struct s5pv210_nand *nand = (struct s5pv210_nand *)samsung_get_base_nand();
 	debug("dev_ready\n");
 	return readl(&nand->nfstat) & 0x01;
 }
@@ -56,22 +56,84 @@ static int s5pv210_dev_ready(struct mtd_info *mtd)
 #ifdef CONFIG_S5PV210_NAND_HWECC
 void s5pv210_nand_enable_hwecc(struct mtd_info *mtd, int mode)
 {
-	struct s5pv210_nand *nand = samsung_get_base_nand();
+	struct s5pv210_nand *nand = (struct s5pv210_nand *)samsung_get_base_nand();
 	debug("s5pv210_nand_enable_hwecc(%p, %d)\n", mtd, mode);
-	writel(readl(&nand->nfconf) | S5PV210_NFCONF_INITECC, &nand->nfconf);
+	
+	writel(readl(&nand->nfconf) | (0x3 << 23), &nand->nfconf);
+	
+	if (mode == NAND_ECC_READ)
+	{
+	}
+	else if (mode == NAND_ECC_WRITE)
+	{
+		/* set 8/12/16bit Ecc direction to Encoding */
+		writel(readl(&nand->nfecccont) | (0x1 << 16), &nand->nfecccont);
+		/* clear 8/12/16bit ecc encode done */
+		writel(readl(&nand->nfeccstat) | (0x1 << 25), &nand->nfeccstat);
+	}
+	
+	/* Initialize main area ECC decoder/encoder */
+	writel(readl(&nand->nfcont) | (0x1 << 5), &nand->nfcont);
+	
+	/* The ECC message size(For 512-byte message, you should set 511)
+	* 8-bit ECC/512B */
+	writel((511 << 16) | 0x3, &nand->nfeccconf);
+	
+	writel(readl(&nand->nfstat) | (0x1 << 4) | (0x1 << 5), &nand->nfstat);
+	
+	/* Initialize main area ECC decoder/ encoder */
+	writel(readl(&nand->nfecccont) | (0x1 << 2), &nand->nfecccont);
+	
+	/* Unlock Main area ECC   */
+	writel(readl(&nand->nfcont) & ~(0x1 << 7), &nand->nfcont);
 }
 
+/* modied by Nick */
 static int s5pv210_nand_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
 				      u_char *ecc_code)
 {
-	struct s5pv210_nand *nand = samsung_get_base_nand();
-	ecc_code[0] = readb(&nand->nfecc);
-	ecc_code[1] = readb(&nand->nfecc + 1);
-	ecc_code[2] = readb(&nand->nfecc + 2);
-	debug("s5pv210_nand_calculate_hwecc(%p,): 0x%02x 0x%02x 0x%02x\n",
-	       mtd , ecc_code[0], ecc_code[1], ecc_code[2]);
+	struct s5pv210_nand *nand = (struct s5pv210_nand *)samsung_get_base_nand();
+	u32 nfeccprgecc0 = 0, nfeccprgecc1 = 0, nfeccprgecc2 = 0, nfeccprgecc3 = 0;
+
+	/* Lock Main area ECC */
+	writel(readl(&nand->nfcont) | (1 << 7), &nand->nfcont);
+	
+	/* 读取13 Byte的Ecc Code */
+	nfeccprgecc0 = readl(&nand->nfeccprgecc0);
+	nfeccprgecc1 = readl(&nand->nfeccprgecc1);
+	nfeccprgecc2 = readl(&nand->nfeccprgecc2);
+	nfeccprgecc3 = readl(&nand->nfeccprgecc3);
+
+	ecc_code[0] = nfeccprgecc0 & 0xff;
+	ecc_code[1] = (nfeccprgecc0 >> 8) & 0xff;
+	ecc_code[2] = (nfeccprgecc0 >> 16) & 0xff;
+	ecc_code[3] = (nfeccprgecc0 >> 24) & 0xff;
+	ecc_code[4] = nfeccprgecc1 & 0xff;
+	ecc_code[5] = (nfeccprgecc1 >> 8) & 0xff;
+	ecc_code[6] = (nfeccprgecc1 >> 16) & 0xff;
+	ecc_code[7] = (nfeccprgecc1 >> 24) & 0xff;
+	ecc_code[8] = nfeccprgecc2 & 0xff;
+	ecc_code[9] = (nfeccprgecc2 >> 8) & 0xff;
+	ecc_code[10] = (nfeccprgecc2 >> 16) & 0xff;
+	ecc_code[11] = (nfeccprgecc2 >> 24) & 0xff;
+	ecc_code[12] = nfeccprgecc3 & 0xff;
+	
+	debug("s5pv210_nand_calculate_hwecc(%p,):\n"
+		"0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n"
+		"0x%02x 0x%02x 0x%02x\n", mtd , ecc_code[0], ecc_code[1], ecc_code[2], 
+		ecc_code[3], ecc_code[4], ecc_code[5], ecc_code[6], ecc_code[7], 
+		ecc_code[8], ecc_code[9], ecc_code[10], ecc_code[11], ecc_code[12]);
 
 	return 0;
+}
+
+/* add by Nick */
+#define NF8_ReadPage_Adv(a,b,c) (((int(*)(u32, u32, u8*))(*((u32 *)0xD0037F90)))(a,b,c))
+static int s5pv210_nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip,
+				uint8_t *buf, int oob_required, int page)
+{
+	/* tiny210使用的NAND FLASH一个块64页 */
+	return NF8_ReadPage_Adv(page / 64, page % 64, buf);
 }
 
 static int s5pv210_nand_correct_data(struct mtd_info *mtd, u_char *dat,
@@ -85,6 +147,7 @@ static int s5pv210_nand_correct_data(struct mtd_info *mtd, u_char *dat,
 	printf("s5pv210_nand_correct_data: not implemented\n");
 	return -1;
 }
+
 #endif
 
 /*
@@ -112,6 +175,22 @@ static void s5pv210_nand_select_chip(struct mtd_info *mtd, int ctl)
 	}
 }
 
+/* add by Nick */
+static struct nand_ecclayout nand_oob_64 = {
+	.eccbytes = 52,		/* 2048 / 512 * 13 */
+	.eccpos = {	12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+				22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+				32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 
+				42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+				52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+				62, 63},
+	/* 0和1用于保存坏块标记，12~63保存ecc，剩余2~11为free */
+	.oobfree = {
+			{.offset = 2,
+			.length = 10}
+		}
+};
+
 
 int board_nand_init(struct nand_chip *nand)
 {
@@ -123,7 +202,7 @@ int board_nand_init(struct nand_chip *nand)
 	/* initialize hardware */
 	/* HCLK_PSYS=133MHz(7.5ns) */
 	cfg =	(0x1 << 23) |	/* Disable 1-bit and 4-bit ECC */
-			/* \u4e0b\u97623\u4e2a\u65f6\u95f4\u53c2\u6570\u7a0d\u5fae\u6bd4\u8ba1\u7b97\u51fa\u7684\u503c\u5927\u4e9b\uff08\u6211\u8fd9\u91cc\u4f9d\u6b21\u52a01\uff09\uff0c\u5426\u5219\u8bfb\u5199\u4e0d\u7a33\u5b9a */
+			/* 下面3个时间参数稍微比计算出的值大些（我这里依次加1），否则读写不稳定 */
 			(0x3 << 12) |	/* 7.5ns * 2 > 12ns tALS tCLS */
 			(0x2 << 8) | 	/* (1+1) * 7.5ns > 12ns (tWP) */
 			(0x1 << 4) | 	/* (0+1) * 7.5 > 5ns (tCLH/tALH) */
@@ -164,7 +243,7 @@ int board_nand_init(struct nand_chip *nand)
 	nand->ecc.size = CONFIG_SYS_NAND_ECCSIZE;
 	nand->ecc.bytes = CONFIG_SYS_NAND_ECCBYTES;
 	nand->ecc.strength = 1;
-	/* add by shl */
+	/* add by Nick */
 	nand->ecc.layout = &nand_oob_64;
 	nand->ecc.read_page = s5pv210_nand_read_page_hwecc;
 #else
