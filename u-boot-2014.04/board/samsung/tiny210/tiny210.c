@@ -18,7 +18,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-//modify by Nick
+/*modify by Nick*/
 #if 0
 /*
  * Miscellaneous platform dependent initialisations
@@ -44,7 +44,7 @@ static void smc9115_pre_init(void)
 }
 #endif
 
-//add by Nick
+/*add by Nick*/
 static void dm9000_pre_init(void)
 {
 	u32 smc_bw_conf, smc_bc_conf;
@@ -63,7 +63,7 @@ static void dm9000_pre_init(void)
 
 int board_init(void)
 {
-	//modify by Nick
+	/*modify by Nick*/
 //	smc9115_pre_init();
 	dm9000_pre_init();
 
@@ -99,7 +99,7 @@ int board_eth_init(bd_t *bis)
 	int rc = 0;
 #ifdef CONFIG_SMC911X
 	rc = smc911x_initialize(0, CONFIG_SMC911X_BASE);
-//add by Nick
+/*add by Nick*/
 #elif CONFIG_DRIVER_DM9000
 	rc = dm9000_initialize(bis);
 #endif
@@ -209,6 +209,6 @@ void copy_bl2_to_ram(void)
 	else if (V210_SDMMC_BASE == 0xEB200000)	// 通道2
 		ch = 2;
 	
-	CopySDMMCtoMem(ch, 32, 400, (unsigned int *)CONFIG_SYS_SDRAM_BASE, 0);
+	CopySDMMCtoMem(ch, 32, 500, (unsigned int *)CONFIG_SYS_SDRAM_BASE, 0);
 }
 #endif

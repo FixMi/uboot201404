@@ -587,7 +587,7 @@ void board_init_r(gd_t *id, ulong dest_addr)
 #endif
 
 #if defined(CONFIG_CMD_ONENAND)
-//mask by Nick
+/*mask by Nick*/
 //	onenand_init();
 #endif
 
