@@ -255,7 +255,7 @@ void copy_bl2_to_ram(void)
 			ch = 0;
 		else if (V210_SDMMC_BASE == 0xEB200000)	// 通道2
 			ch = 2;
-		CopySDMMCtoMem(ch, 32, bl2Size / 512, (u32 *)CONFIG_SYS_SDRAM_BASE, 0);
+		CopySDMMCtoMem(ch, 33, bl2Size / 512, (u32 *)CONFIG_SYS_SDRAM_BASE, 0);
 	}
 }
 #endif
