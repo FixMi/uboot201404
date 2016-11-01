@@ -18,6 +18,14 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+/* add by Nick. */
+/*
+ * 移植linux 3.3.5版本时发现一个问题，启动kernel时停在“Starting kernel ...”，后来查资料发现是因为linux 3.3.5 uart发送时如果uart配置为fifo模式，但由于
+ * fifo_mask、fifo_max没被赋值，导致死在了一个while循环里面（arch/arm/plat-samsung/include/plat/uncompress.h -> static void putc(int ch)），不知道算不算linux的bug。
+ * 为了解决这个问题暂时采用关闭uart fifo的方式。通过宏ENABLE_FIFO来控制是否打开uart fifo。
+ */
+//#define ENABLE_FIFO
+
 #define RX_FIFO_COUNT_MASK	0xff
 #define RX_FIFO_FULL_MASK	(1 << 8)
 #define TX_FIFO_FULL_MASK	(1 << 24)
@@ -99,9 +107,14 @@ static void serial_setbrg_dev(const int dev_index)
 static int serial_init_dev(const int dev_index)
 {
 	struct s5p_uart *const uart = s5p_get_base_uart(dev_index);
-
+	/* modify by Nick */
+#if defined (ENABLE_FIFO)
 	/* enable FIFOs, auto clear Rx FIFO */
 	writel(0x3, &uart->ufcon);
+#else
+	//disable fifo
+	writel(0x0, &uart->ufcon);
+#endif /*ENABLE_FIFO*/
 	writel(0, &uart->umcon);
 	/* 8N1 */
 	writel(0x3, &uart->ulcon);
@@ -146,11 +159,20 @@ static int serial_getc_dev(const int dev_index)
 		return 0;
 
 	/* wait for character to arrive */
+	/*modify by Nick. */
+#if defined (ENABLE_FIFO)	
 	while (!(readl(&uart->ufstat) & (RX_FIFO_COUNT_MASK |
 					 RX_FIFO_FULL_MASK))) {
 		if (serial_err_check(dev_index, 0))
 			return 0;
 	}
+#else
+	while (!(readl(&uart->utrstat) & 0x1)) {
+		if (serial_err_check(dev_index, 0))
+			return 0;
+	}
+
+#endif /*ENABLE_FIFO*/
 
 	return (int)(readb(&uart->urxh) & 0xff);
 }
@@ -166,10 +188,18 @@ static void serial_putc_dev(const char c, const int dev_index)
 		return;
 
 	/* wait for room in the tx FIFO */
+	/* modify by Nick. */
+#if defined (ENABLE_FIFO)	
 	while ((readl(&uart->ufstat) & TX_FIFO_FULL_MASK)) {
 		if (serial_err_check(dev_index, 1))
 			return;
 	}
+#else
+	while (!(readl(&uart->utrstat) & 0x2)) {
+		if (serial_err_check(dev_index, 1))
+			return;
+	}
+#endif /*ENABLE_FIFO*/
 
 	writeb(c, &uart->utxh);
 
