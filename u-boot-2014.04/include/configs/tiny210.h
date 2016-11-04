@@ -83,7 +83,7 @@
 #define CONFIG_CMD_FAT
 #define CONFIG_CMD_MTDPARTS
 
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	1
 
 #define CONFIG_ZERO_BOOTDELAY_CHECK
 
@@ -99,25 +99,34 @@
 
 /*modify by Nick*/
 #define MTDIDS_DEFAULT		"nand0=s5p-nand"
-#define MTDPARTS_DEFAULT	"mtdparts=s5p-nand:256k(bootloader)"\
-				",128k@0x40000(params)"\
-				",3m@0x60000(kernel)"\
-				",-(rootfs)"
+#define MTDPARTS_DEFAULT	"mtdparts=s5p-nand:1m(bootloader)"\
+				",128k@0x100000(params)"\
+				",5m@0x120000(kernel)"\
+				",256m@0x620000(rootfs)"\
+				",-(system)"
+
+/*add by Nick.*/
+#define IPADDR_DEFAULT		"192.168.0.102"
+#define SERVERIP_DEFAULT	"192.168.0.100"
+#define ETHADDR_DEFAULT		"12:34:56:78:AB:CD"
+#define GATEWAYIP_DEFAULT	"192.168.0.1"
+#define NETMASK_DEFAULT		"255.255.255.0"
 
 #define NORMAL_MTDPARTS_DEFAULT MTDPARTS_DEFAULT
 
-#define CONFIG_BOOTCOMMAND	"run ubifsboot"
+/* default flashboot (modify by Nick.)*/
+#define CONFIG_BOOTCOMMAND	"run flashboot"
 
 #define CONFIG_RAMDISK_BOOT	"root=/dev/ram0 rw rootfstype=ext2" \
 				" console=ttySAC0,115200n8" \
 				" mem=128M"
 
 #define CONFIG_COMMON_BOOT	"console=ttySAC0,115200n8" \
-				" mem=128M " \
+				" mem=512M " \
 				" " MTDPARTS_DEFAULT
 
-#define CONFIG_BOOTARGS	"root=/dev/mtdblock5 ubi.mtd=4" \
-			" rootfstype=cramfs " CONFIG_COMMON_BOOT
+#define CONFIG_BOOTARGS	"noinitrd root=/dev/mtdblock3" \
+			" rootfstype=yaffs2 rw " CONFIG_COMMON_BOOT
 
 #define CONFIG_UPDATEB	"updateb=onenand erase 0x0 0x40000;" \
 			" onenand write 0x32008000 0x0 0x40000\0"
@@ -132,12 +141,11 @@
 		"onenand erase block 147-4095;" \
 		"onenand write 0x32000000 0x1260000 0x8C0000\0" \
 	"bootk=" \
-		"onenand read 0x30007FC0 0x60000 0x300000;" \
-		"bootm 0x30007FC0\0" \
+		"nand read 0x21000000 0x120000 0x500000;" \
+		"bootm 0x21000000\0" \
 	"flashboot=" \
-		"set bootargs root=/dev/mtdblock${bootblock} " \
-		"rootfstype=${rootfstype} " \
-		"ubi.mtd=${ubiblock} ${opts} " CONFIG_COMMON_BOOT ";" \
+		"set bootargs noinitrd root=/dev/mtdblock${bootblock} " \
+		"rootfstype=${rootfstype} rw " CONFIG_COMMON_BOOT ";" \
 		"run bootk\0" \
 	"ubifsboot=" \
 		"set bootargs root=ubi0!rootfs rootfstype=ubifs " \
@@ -149,21 +157,26 @@
 		"rootfstype=ubifs init=/init.sh " CONFIG_COMMON_BOOT "; " \
 		"run bootk\0" \
 	"nfsboot=" \
-		"set bootargs root=/dev/nfs ubi.mtd=${ubiblock} " \
+		"set bootargs root=/dev/nfs " \
 		"nfsroot=${nfsroot},nolock " \
 		"ip=${ipaddr}:${serverip}:${gatewayip}:" \
-		"${netmask}:nowplus:usb0:off " CONFIG_COMMON_BOOT "; " \
+		"${netmask}::eth0:off " CONFIG_COMMON_BOOT "; " \
 		"run bootk\0" \
 	"ramboot=" \
 		"set bootargs " CONFIG_RAMDISK_BOOT \
 		" initrd=0x33000000,8M ramdisk=8192\0" \
-	"rootfstype=cramfs\0" \
+	"rootfstype=yaffs2\0" \
 	"mtdparts=" MTDPARTS_DEFAULT "\0" \
-	"meminfo=mem=128M\0" \
-	"nfsroot=/nfsroot/arm\0" \
-	"bootblock=5\0" \
+	"meminfo=mem=512M\0" \
+	"nfsroot=/home/nick/nfs/rootfs\0" \
+	"bootblock=3\0" \
 	"ubiblock=4\0" \
-	"ubi=enabled"
+	"ubi=disbled\0" \
+	"ipaddr=" IPADDR_DEFAULT "\0" \
+	"serverip=" SERVERIP_DEFAULT "\0" \
+	"ethaddr=" ETHADDR_DEFAULT "\0" \
+	"gatewayip=" GATEWAYIP_DEFAULT "\0" \
+	"netmask=" NETMASK_DEFAULT
 
 /*
  * Miscellaneous configurable options
@@ -213,8 +226,8 @@
 /*#define CONFIG_ENV_IS_IN_ONENAND	1*/
 #define CONFIG_ENV_IS_IN_NAND		1
 #define CONFIG_ENV_SIZE			(128 << 10)	/* 128KiB, 0x20000 */
-#define CONFIG_ENV_ADDR			(256 << 10)	/* 256KiB, 0x40000 */
-#define CONFIG_ENV_OFFSET		(256 << 10)	/* 256KiB, 0x40000 */
+#define CONFIG_ENV_ADDR			(1 << 20)	/* 1MiB, 0x40000 */
+#define CONFIG_ENV_OFFSET		(1 << 20)	/* 1MiB, 0x40000 */
 
 #define CONFIG_USE_ONENAND_BOARD_INIT
 #define CONFIG_SAMSUNG_ONENAND		1
