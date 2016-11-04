@@ -97,6 +97,10 @@
 #define CONFIG_SYS_NAND_ECCSIZE			512
 #define CONFIG_SYS_NAND_ECCBYTES		13
 
+/*add by Nick.*/
+#define CONFIG_CMD_NAND_YAFFS			1
+
+
 /*modify by Nick*/
 #define MTDIDS_DEFAULT		"nand0=s5p-nand"
 #define MTDPARTS_DEFAULT	"mtdparts=s5p-nand:1m(bootloader)"\
