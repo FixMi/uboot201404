@@ -145,7 +145,7 @@
 		"onenand erase block 147-4095;" \
 		"onenand write 0x32000000 0x1260000 0x8C0000\0" \
 	"bootk=" \
-		"nand read 0x21000000 0x120000 0x500000;" \
+		"nand read 0x21000000 0x120000 0x300000;" \
 		"bootm 0x21000000\0" \
 	"flashboot=" \
 		"set bootargs noinitrd root=/dev/mtdblock${bootblock} " \
