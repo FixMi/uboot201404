@@ -132,18 +132,24 @@
 #define CONFIG_BOOTARGS	"noinitrd root=/dev/mtdblock3" \
 			" rootfstype=yaffs2 rw " CONFIG_COMMON_BOOT
 
-#define CONFIG_UPDATEB	"updateb=onenand erase 0x0 0x40000;" \
-			" onenand write 0x32008000 0x0 0x40000\0"
+#define CONFIG_UPDATEB	"updateb=tftp 20000000 tiny210-u-boot.bin;nand erase.part bootloader;" \
+			" nand write 20000000 bootloader $filesize\0"
 
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	CONFIG_UPDATEB \
 	"updatek=" \
-		"onenand erase 0x60000 0x300000;" \
-		"onenand write 0x31008000 0x60000 0x300000\0" \
+		"tftp 21000000 uImage;"\
+		"nand erase.part kernel;" \
+		"nand write 21000000 kernel $filesize\0" \
 	"updateu=" \
-		"onenand erase block 147-4095;" \
-		"onenand write 0x32000000 0x1260000 0x8C0000\0" \
+		"tftp 20000000 tiny210-u-boot.bin;" \
+		"nand erase.part bootloader;" \
+		"nand write 20000000 bootloader $filesize\0" \
+	"updatefs=" \
+		"tftp 20000000 tiny210-rootfs.img;"\
+		"nand erase.part rootfs;"\
+		"nand write.yaffs 20000000 rootfs $filesize\0"\
 	"bootk=" \
 		"nand read 0x21000000 0x120000 0x300000;" \
 		"bootm 0x21000000\0" \
