@@ -10,6 +10,7 @@
 #include <version.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/power.h>
+#include <asm/arch/tzpc.h>	/*add by Nick. */
 
 /*
  * Register usages:
@@ -28,7 +29,10 @@ lowlevel_init:
 	/*add by Nick*/ 
     ldr r0, =0xE0200000		/* config GPIO as UART */
 	ldr r1, =0x22222222
-	str r1, [r0]		
+	str r1, [r0]
+    /* TZPZ init. non-secure. add by Nick. */
+    bl tzpc_init
+			
 #endif
 	mov	pc, r9
 
@@ -98,4 +102,32 @@ system_clock_init:
 													
 	mov pc, lr
 
+
+tzpc_init:
+
+    ldr r0, =S5PV210_TZPC0_BASE
+    mov r1, #0x0	
+    str r1, [r0]  @ 0x00000000 = no secure region	
+    mov r1, #0xff @ 1 = Decode region corresponding to the bit is non-secure
+    str r1, [r0, #TZPC_DECPROT0SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT1SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT2SET_OFFSET]
+
+    ldr     r0, =S5PV210_TZPC1_BASE
+    str r1, [r0, #TZPC_DECPROT0SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT1SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT2SET_OFFSET]
+
+    ldr r0, =S5PV210_TZPC2_BASE
+    str r1, [r0, #TZPC_DECPROT0SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT1SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT2SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT3SET_OFFSET]
+
+    ldr r0, =S5PV210_TZPC3_BASE
+    str r1, [r0, #TZPC_DECPROT0SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT1SET_OFFSET]
+    str r1, [r0, #TZPC_DECPROT2SET_OFFSET]
+
+    mov pc, lr
 
