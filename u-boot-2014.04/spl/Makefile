@@ -196,10 +196,9 @@ VAR_SIZE_PARAM = --vs
 else
 VAR_SIZE_PARAM =
 endif
+#modied by Nick
 $(obj)/$(BOARD)-spl.bin: $(obj)/u-boot-spl.bin
-	$(if $(wildcard $(objtree)/spl/board/samsung/$(BOARD)/tools/mk$(BOARD)spl),\
-	$(objtree)/spl/board/samsung/$(BOARD)/tools/mk$(BOARD)spl,\
-	$(objtree)/tools/mkexynosspl) $(VAR_SIZE_PARAM) $< $@
+	$(objtree)/tools/mk$(BOARD)spl  $< $@
 endif
 
 quiet_cmd_objcopy = OBJCOPY $@

@@ -51,6 +51,8 @@
 !/spl/*
 !/tpl/
 
+!/sd_fuse/tiny4412/*.bin
+
 #
 # Generated include files
 #
